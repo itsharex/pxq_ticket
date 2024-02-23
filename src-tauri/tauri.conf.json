@@ -1,0 +1,92 @@
+{
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist",
+    "withGlobalTauri": true
+  },
+  "package": {
+    "productName": "pxq_ticket",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "app": {
+        "all": true, 
+        "show": true,
+        "hide": true
+      },
+      
+      "shell": {
+        "all": true,
+        "execute": false,
+        "open": false,
+        "scope": [],
+        "sidecar": false
+      },
+      "window": {
+        "all": true
+      },
+      "fs": {
+       "all": true, 
+        "readFile": true, 
+        "writeFile": true,
+        "readDir": true,
+        "copyFile": true,
+        "createDir": true,
+        "removeDir": true,
+        "removeFile": true,
+        "renameFile": true
+      },
+      "path": {
+        "all": true
+      }
+    },
+    "bundle": {
+      "active": true,
+      "targets": "all",
+      "identifier": "com.pxq-ticket.dev",
+      "publisher": "classmatelin",
+      "shortDescription": "QQ",
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ],
+      "resources": [
+        ".resources/*"
+      ],
+      "windows": {
+        "webviewInstallMode": {
+          "type": "embedBootstrapper"
+        },
+        "wix": {
+          "language": "zh-CN"
+        }
+      }
+    },
+    "security": {
+      "csp": null
+    },
+    "windows": [
+      {
+        "label": "main",
+        "title": "票星球",
+        "fullscreen": false,
+        "resizable": true,
+        "width": 1920,
+        "height": 1080,
+        "center": true
+      }
+    ],
+    "systemTray": {
+      "iconPath": "icons/32x32.png",
+      "title": "票星球",
+      "iconAsTemplate": true,
+      "menuOnLeftClick": true
+    }
+  }
+}

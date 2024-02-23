@@ -1,0 +1,44 @@
+[package]
+name = "pxq_ticket"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+license = ""
+repository = ""
+edition = "2021"
+
+[profile.release]
+panic = "abort" # Strip expensive panic clean-up logic
+codegen-units = 1 # Compile crates one after another so the compiler can optimize better
+lto = true # Enables link to optimizations
+opt-level = "s" # Optimize for binary size
+strip = true # Remove debug symbols
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+tauri-build = { version = "^1.5", features = [] }
+
+[dependencies]
+tauri = { version = "1.5", features = [ "path-all", "fs-all", "window-all", "shell-all", "app-all", "system-tray"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+reqwest = {version="0.11.12", default-features=false, features = ["json", "rustls-tls-native-roots", "cookies", "multipart"] }
+reqwest_cookie_store = {version="0.6"}
+anyhow = {version="1.0.65"}
+thiserror = { version = "^1.0.32" }
+tokio = { version = "1.12.0", features = ["full"] }
+project-root = {version = "0.2.2"}
+num-bigint = {version="0.4.4"}
+chrono = {version="0.4.31"}
+regex = {version="1.10.2"}
+tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+tauri-plugin-store = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+base64 = "0.21.5"
+url = { version = "2"}
+rand = "0.8.4"
+async-channel= {version = "1.8"}
+[features]
+# this feature is used for production builds or when `devPath` points to the filesystem
+# DO NOT REMOVE!!
+custom-protocol = ["tauri/custom-protocol"]

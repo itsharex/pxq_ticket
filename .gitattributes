@@ -1,0 +1,2 @@
+*.vue linguist-language=Rust
+*.ts linguist-language=Rust

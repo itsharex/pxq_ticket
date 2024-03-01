@@ -33,6 +33,9 @@ pub enum PXQError {
     #[error("获取观演人信息失败")]
     GetUserAudienceError,
 
+    #[error("获取用户地区失败")]
+    GetUserLocationError,
+
     #[error("获取票档失败")]
     GetSeatPlansError,
 

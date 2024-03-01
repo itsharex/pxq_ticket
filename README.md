@@ -4,6 +4,13 @@
 
 基于 Tauri 开发的跨平台票星球客户端，可在 Linux、Windows 和 macOS 等操作系统上使用。
 
+## 使用
+
+- 手机应用商店下载票星球APP客户端或者微信小程序搜索票星球注册账号, 然后添加好观演人信息。
+- 点击[下载](https://github.com/ClassmateLin/pxq_ticket/releases)二进制包, 安装即可。
+- 使用短信验证码登录。
+- 在演出页面搜索你需要购买的演唱会，然后点击按钮之后跳转到购买页面， 选择购票数量和观众，然后点击运行即可。
+
 
 ## 功能展示
 
@@ -57,9 +64,11 @@
 - 页面优化
 
 
-## **[交朋友的点这里或扫码](https://faka577.site/buy/2)**
+## **[进微信群的点这里或扫码](https://faka577.site/buy/2)**
 
  <img src="./imgs/qr.png" width = "400" height = "400" alt="数量" align=center />
+
+## **[进TG群的点这里](https://faka577.site/buy/5)** 
 
 
 ## 特别声明

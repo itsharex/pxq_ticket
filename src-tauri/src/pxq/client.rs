@@ -21,8 +21,10 @@ pub async fn get_access_token(app: tauri::Window) -> Result<String> {
     let path = app
         .app_handle()
         .path_resolver()
-        .resolve_resource(".settings.dat")
-        .unwrap();
+        .app_data_dir()
+        .unwrap()
+        .join(".settings.dat");
+    println!("{:?}", path);
     let stores = app.state::<StoreCollection<Wry>>();
     let access_token = with_store(app.app_handle(), stores, path, |store| {
         Ok(store.get("access_token").cloned())
@@ -75,7 +77,7 @@ pub async fn post(app: tauri::Window, url: &str, json_data: Value) -> Result<ser
     let client = get_http_client().await?;
 
     let access_token = get_access_token(app).await?;
-
+    println!("access_token:{}", access_token);
     let data = client
         .post(url)
         .json(&json_data)

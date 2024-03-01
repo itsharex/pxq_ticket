@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "pxq_ticket",
-    "version": "0.1.0"
+    "version": "0.1.1"
   },
   "tauri": {
     "allowlist": {
@@ -29,15 +29,18 @@
         "all": true
       },
       "fs": {
-       "all": true, 
-        "readFile": true, 
+        
+        "all": true, 
+        "readFile": true,
         "writeFile": true,
         "readDir": true,
         "copyFile": true,
         "createDir": true,
         "removeDir": true,
         "removeFile": true,
-        "renameFile": true
+        "renameFile": true,
+        "exists": true,
+        "scope": ["$APPDATA/*"]
       },
       "path": {
         "all": true
@@ -48,7 +51,7 @@
       "targets": "all",
       "identifier": "com.pxq-ticket.dev",
       "publisher": "classmatelin",
-      "shortDescription": "QQ",
+      "shortDescription": "票星球客户端",
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",

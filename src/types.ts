@@ -117,3 +117,18 @@ export type GetSeatPlansResult = {
         seatPlans: SeatPlan[]
     }
 }
+
+
+export type UserLocation = {
+    cityId: string,
+    cityName: string,
+    provinceId: string,
+    provinceName: string,
+    siteId: string
+}
+
+export type GetUserLocationResult = {
+    statusCode: number,
+    comments: string,
+    data: UserLocation
+}

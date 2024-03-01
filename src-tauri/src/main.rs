@@ -35,6 +35,7 @@ fn main() {
             pxq::user::refresh_token,
             pxq::user::get_user_profile,
             pxq::user::get_user_audiences,
+            pxq::user::get_user_location,
             pxq::show::search_show_list,
             pxq::show::query_show_sessions,
             pxq::show::add_reminder,

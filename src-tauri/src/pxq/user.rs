@@ -231,3 +231,45 @@ pub async fn get_user_audiences(app: tauri::Window) -> Result<GetUserAudiencesRe
         .map_err(|_| PXQError::GetUserAudienceError)?;
     Ok(result)
 }
+
+
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UserLocation {
+
+    #[serde(rename="cityId")]
+    pub city_id: String,
+
+    #[serde(rename="cityName")]
+    pub city_name: String,
+
+    #[serde(rename="provinceId")]
+    pub province_id: String,
+
+    #[serde(rename="provinceName")]
+    pub province_name: String,
+
+    #[serde(rename="siteId")]
+    pub site_id: String
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetUserLocationResult {
+    #[serde(rename = "statusCode")]
+    status_code: i32,
+    comments: String,
+    data: Option<UserLocation>
+}
+
+
+#[tauri::command(async)]
+pub async fn get_user_location(app: tauri::Window) -> Result<GetUserLocationResult, PXQError> {
+    let url = "https://m.piaoxingqiu.com/cyy_gatewayapi/home/pub/v5/citys/current_location?src=WEB&ver=4.0.13-20240223084920";
+    let form = json!({});
+    let data = get(app, url, form)
+        .await
+        .map_err(|_| PXQError::GetUserLocationError)?;
+    let result = serde_json::from_value::<GetUserLocationResult>(data)
+        .map_err(|_| PXQError::GetUserLocationError)?;
+    Ok(result)
+}

@@ -92,7 +92,7 @@ const selectedSeatPlanIndex = ref(0)
 const audiences = ref([] as Audiences[]);
 const quantity = ref(1);
 const unlisten = ref(undefined as unknown as UnlistenFn);
-const logData = ref("hello")
+const logData = ref("")
 const isRunning = ref(false);
 const incrementQuantity = () => { quantity.value++; };
 const decrementQuantity = () => { if (quantity.value > 1) quantity.value--; };

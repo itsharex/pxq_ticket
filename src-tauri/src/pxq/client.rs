@@ -1,8 +1,10 @@
+use std::sync::Arc;
+
 use super::error::PXQError;
 use anyhow::Result;
 use reqwest::Client;
 use serde_json::Value;
-use tauri::{Manager, Wry};
+use tauri::{Manager, Window, Wry};
 use tauri_plugin_store::{with_store, StoreCollection};
 
 const UA: &'static str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36";
@@ -17,14 +19,13 @@ pub async fn get_http_client() -> Result<Client> {
     Ok(client)
 }
 
-pub async fn get_access_token(app: tauri::Window) -> Result<String> {
+pub async fn get_access_token(app: Arc<Window>) -> Result<String> {
     let path = app
         .app_handle()
         .path_resolver()
         .app_data_dir()
         .unwrap()
         .join(".settings.dat");
-    println!("{:?}", path);
     let stores = app.state::<StoreCollection<Wry>>();
     let access_token = with_store(app.app_handle(), stores, path, |store| {
         Ok(store.get("access_token").cloned())
@@ -42,7 +43,7 @@ pub async fn get_access_token(app: tauri::Window) -> Result<String> {
 }
 
 pub async fn get(
-    app: tauri::Window,
+    app: Arc<Window>,
     url: &str,
     form: serde_json::Value,
 ) -> Result<serde_json::Value> {
@@ -53,7 +54,6 @@ pub async fn get(
     let access_token = get_access_token(app)
         .await
         .map_err(|_| PXQError::FileAccessError)?;
-    println!("access_token:{}", access_token);
     let data = client
         .get(url)
         .form(&form)
@@ -73,7 +73,7 @@ pub async fn get(
     Ok(data)
 }
 
-pub async fn post(app: tauri::Window, url: &str, json_data: Value) -> Result<serde_json::Value> {
+pub async fn post(app: Arc<Window>, url: &str, json_data: Value) -> Result<serde_json::Value> {
     let client = get_http_client().await?;
 
     let access_token = get_access_token(app).await?;

@@ -1,14 +1,25 @@
-use std::fmt::format;
+use std::sync::Arc;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tauri::Window;
 use url::form_urlencoded;
 
 use super::{
     client::{get, post},
     error::PXQError,
 };
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BackendCategory {
+    pub code: i32,
+    #[serde(rename = "displayName")]
+    pub display_name: String,
+
+    #[serde(rename = "name")]
+    pub name: String,
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Show {
@@ -53,6 +64,9 @@ pub struct Show {
 
     #[serde(rename = "latestSaleTime")]
     pub latest_sale_time: Option<String>,
+
+    #[serde(rename = "backendCategory")]
+    pub backend_category: BackendCategory,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -74,11 +88,12 @@ pub struct SearchShowResult {
 
 #[tauri::command(async)]
 pub async fn search_show_list(
-    app: tauri::Window,
+    app: Window,
     keyword: String,
     sort_type: String,
     page: u8,
 ) -> Result<SearchShowResult, PXQError> {
+    let app = Arc::new(app);
     let keyword: String = form_urlencoded::byte_serialize(keyword.as_bytes()).collect();
     let offset = (page - 1) * 10;
     let url = format!("https://m.piaoxingqiu.com/cyy_gatewayapi/home/pub/v3/show_list/search?backendCategoryCode=ALL&cityId=4455&keyword={}&length=10&offset={}&pageType=SEARCH_PAGE&sortType={}&src=WEB&ver=4.0.13-20240223084920", 
@@ -152,11 +167,11 @@ pub struct Session {
     #[serde(rename = "seatPlans")]
     pub seat_plans: Vec<SeatPlan>,
 
-    #[serde(rename="sessionStatus")]
+    #[serde(rename = "sessionStatus")]
     pub session_status: String,
 
-    #[serde(rename="sessionSaleTime")]
-    pub session_sale_time: Option<i64>
+    #[serde(rename = "sessionSaleTime")]
+    pub session_sale_time: Option<i64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -169,9 +184,11 @@ pub struct QueryShowSessionsResult {
 
 #[tauri::command(async)]
 pub async fn query_show_sessions(
-    app: tauri::Window,
+    app: Window,
     show_id: String,
 ) -> Result<QueryShowSessionsResult, PXQError> {
+    let app = Arc::new(app);
+
     let url = format!(
         "https://m.piaoxingqiu.com/cyy_gatewayapi/show/pub/v5/show/{}/sessions",
         show_id
@@ -206,10 +223,12 @@ pub struct AddReminderResult {
 
 #[tauri::command(async)]
 pub async fn add_reminder(
-    app: tauri::Window,
+    app: Window,
     show_id: String,
     session_id: String,
 ) -> Result<AddReminderResult, PXQError> {
+    let app = Arc::new(app);
+
     let url = format!("https://m.piaoxingqiu.com/cyy_gatewayapi/show/buyer/v3/shows/{}/subscribe?showSessionId={}", show_id, session_id);
     let json_data = json!({
         "src": "WEB",
@@ -246,11 +265,13 @@ pub struct TicketWaitlistResult {
 
 #[tauri::command(async)]
 pub async fn ticket_waitlist(
-    app: tauri::Window,
+    app: Window,
     show_id: String,
     session_id: String,
     seat_plan_id: String,
 ) -> Result<TicketWaitlistResult, PXQError> {
+    let app = Arc::new(app);
+
     let url = format!("https://m.piaoxingqiu.com/cyy_gatewayapi/show/buyer/v3/shows/{}/subscribe?showSessionId={}", show_id, session_id);
     let json_data = json!({
         "src": "WEB",
@@ -289,10 +310,12 @@ pub struct GetSeatPlansResult {
 
 #[tauri::command(async)]
 pub async fn get_seat_plans(
-    app: tauri::Window,
+    app: Window,
     show_id: String,
     session_id: String,
 ) -> Result<GetSeatPlansResult, PXQError> {
+    let app = Arc::new(app);
+
     let url = format!(
         "https://m.piaoxingqiu.com/cyy_gatewayapi/show/pub/v5/show/{}/session/{}/seat_plans",
         show_id, session_id

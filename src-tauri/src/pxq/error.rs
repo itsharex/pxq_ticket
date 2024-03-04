@@ -1,4 +1,3 @@
-use serde_json::error;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -36,9 +35,11 @@ pub enum PXQError {
     #[error("获取用户地区失败")]
     GetUserLocationError,
 
+    #[error("获取用户地区失败")]
+    GetUserAddressError,
+
     #[error("获取票档失败")]
     GetSeatPlansError,
-
 
     #[error("预下单失败")]
     PreOrderError,
@@ -47,7 +48,7 @@ pub enum PXQError {
     CreateOrderError,
 
     #[error("请在演唱会公布开售时间后再运行!")]
-    ShowTimeUnknownError
+    ShowTimeUnknownError,
 }
 
 impl serde::Serialize for PXQError {

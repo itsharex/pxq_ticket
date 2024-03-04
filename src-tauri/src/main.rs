@@ -41,7 +41,6 @@ fn main() {
             pxq::show::add_reminder,
             pxq::show::ticket_waitlist,
             pxq::show::get_seat_plans,
-            pxq::order::pre_order,
             pxq::order::buy_tickets,
         ])
         .run(tauri::generate_context!())

@@ -55,7 +55,7 @@ export type OrderItem = {
 }
 
 
-export type Concert = {
+export type Show = {
     showId: string
     showName: string
     posterUrl: string
@@ -64,7 +64,12 @@ export type Concert = {
     venueName: string
     showStatus: string
     latestSaleTime: string | null
-    cityName: string
+    cityName: string,
+    backendCategory: {
+        code: number,
+        name: string,
+        displayName: string
+    }
 }
 
 export type QueryShowSessionResult = {
@@ -98,7 +103,7 @@ export type Audiences = {
 }
 
 export type CurShowData = {
-    show: Concert,
+    show: Show,
     session: Session,
     seatPlans: SeatPlan[],
     seatPlanIndex: number
@@ -132,3 +137,12 @@ export type GetUserLocationResult = {
     comments: string,
     data: UserLocation
 }
+
+export type BuyTicketParam = {
+    show: Show,
+    session: Session,
+    seatPlan: SeatPlan,
+    ticketNum: number,
+    audiences: Audiences[]
+}
+

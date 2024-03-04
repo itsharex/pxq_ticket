@@ -14,7 +14,7 @@
 
     <div v-if="showModal" class="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50 ">
       <div class="bg-white p-6 rounded-md shadow-md">
-        <h2 class="text-xl font-bold mb-4">{{ selectedConcert.showName }}</h2>
+        <h2 class="text-xl font-bold mb-4">{{ selectedShow.showName }}</h2>
 
         <div class="p-4">
           <h4>场次:</h4>
@@ -51,26 +51,27 @@
     <div v-else-if="error" class="text-center text-red-500">{{ error }}</div>
 
     <div v-else>
-      <div v-if="concerts.length === 0 && !reachedEnd" class="text-center text-gray-500">暂无演唱会门票</div>
+      <div v-if="shows.length === 0 && !reachedEnd" class="text-center text-gray-500">暂无演唱会门票</div>
       <div v-else>
-        <div v-for="(concert, index) in sortedConcerts" :key="index" class="border p-4 mb-4 flex items-start">
-          <img :src="concert.posterUrl" alt="Concert Image" class="w-48 h-48 object-cover rounded-md mr-4">
+        <div v-for="(show, index) in sortedShows" :key="index" class="border p-4 mb-4 flex items-start">
+          <img :src="show.posterUrl" alt="Show Image" class="w-48 h-48 object-cover rounded-md mr-4">
           <div class="flex-grow">
-            <h3 class="text-lg font-bold mb-2">{{ concert.showName }}</h3>
-            <p><span class="font-bold">日期:</span> {{ concert.showDate }}</p>
-            <p><span class="font-bold">城市:</span> {{ concert.cityName }}</p>
-            <p><span class="font-bold">场地:</span> {{ concert.venueName }}</p>
-            <p v-if="concert.latestSaleTime"><span class="font-bold">开售时间:</span> {{ concert.latestSaleTime }}</p>
+            <h3 class="text-lg font-bold mb-2">{{ show.showName }}</h3>
+            <p><span class="font-bold">类型:</span> {{ show.backendCategory.displayName }}</p>
+            <p><span class="font-bold">日期:</span> {{ show.showDate }}</p>
+            <p><span class="font-bold">城市:</span> {{ show.cityName }}</p>
+            <p><span class="font-bold">场地:</span> {{ show.venueName }}</p>
+            <p v-if="show.latestSaleTime"><span class="font-bold">开售时间:</span> {{ show.latestSaleTime }}</p>
             <div class="flex items-center mt-2">
-              <p class="text-lg font-bold mr-auto">{{ concert.minOriginalPrice }} 元起</p>
+              <p class="text-lg font-bold mr-auto">{{ show.minOriginalPrice }} 元起</p>
               <div class="flex items-center mt-2">
-                <button v-if="concert.showStatus === 'PENDING' && concert.latestSaleTime"
+                <button v-if="show.showStatus === 'PENDING' && show.latestSaleTime"
                   class="p-2 bg-blue-500 text-white rounded-md" @click="openModal(index, BtnType.WAIT)">加入抢票</button>
-                <button v-else-if="concert.showStatus === 'PENDING'" class="p-2 bg-blue-500 text-white rounded-md"
+                <button v-else-if="show.showStatus === 'PENDING'" class="p-2 bg-blue-500 text-white rounded-md"
                   @click="openModal(index, BtnType.REMIND)">添加提醒</button>
-                <button v-else-if="concert.showStatus === 'ONSALE'" class="p-2 bg-blue-500 text-white rounded-md"
+                <button v-else-if="show.showStatus === 'ONSALE'" class="p-2 bg-blue-500 text-white rounded-md"
                   @click="openModal(index, BtnType.BUY)">立即购买</button>
-                <button v-else-if="concert.showStatus === 'PRESALE'" class="p-2 bg-blue-500 text-white rounded-md"
+                <button v-else-if="show.showStatus === 'PRESALE'" class="p-2 bg-blue-500 text-white rounded-md"
                   @click="openModal(index, BtnType.SOLD_OUT)">缺票登记</button>
               </div>
 
@@ -92,7 +93,7 @@ import { ref, computed, onMounted } from 'vue';
 import { toast } from 'vue3-toastify';
 import router from '../router';
 import { set_value } from '../store';
-import { Concert, CurShowData, QueryShowSessionResult, SeatPlan, Session } from '../types';
+import { Show, CurShowData, QueryShowSessionResult, SeatPlan, Session } from '../types';
 
 
 
@@ -106,13 +107,13 @@ const sortBy = ref('NEW'); // 默认按热点排序
 const searchKeyword = ref('');
 const loading = ref(false);
 const error = ref('');
-const concerts = ref([] as Concert[]);
+const shows = ref([] as Show[]);
 const currentPage = ref(1);
 const loadingNextPage = ref(false);
 const reachedEnd = ref(false);
-const selectedConcert = ref({} as Concert);
+const selectedShow = ref({} as Show);
 const showModal = ref(false);
-const sortedConcerts = computed(() => concerts.value);
+const sortedShows = computed(() => shows.value);
 const scroll = ref(null as unknown as Element);
 const sessions = ref([] as Session[]);
 const selectedSessionIndex = ref(0);
@@ -125,11 +126,10 @@ const updateSeatPlans = async () => {
   selectedSeatPlanIndex.value = 0
 }
 const openModal = async (index: number, btnType: BtnType) => {
-  console.log('打开弹窗')
   showModal.value = true;
-  selectedConcert.value = concerts.value[index];
+  selectedShow.value = shows.value[index];
   try {
-    const show_sessions: QueryShowSessionResult = await invoke('query_show_sessions', { showId: selectedConcert.value.showId })
+    const show_sessions: QueryShowSessionResult = await invoke('query_show_sessions', { showId: selectedShow.value.showId })
     if (show_sessions.statusCode == 200) {
       sessions.value = show_sessions.data
       selectedSessionIndex.value = 0;
@@ -159,7 +159,7 @@ const search = async () => {
   currentPage.value = 1; // 重置页码
   loading.value = true;
   try {
-    await fetchConcerts();
+    await fetchShows();
   } catch (error: any) {
     error.value = '加载失败，请重试';
   } finally {
@@ -187,7 +187,7 @@ interface addReminderRes {
   }
 }
 const addReminder = async () => {
-  const res: addReminderRes = await invoke("add_reminder", { showId: selectedConcert.value.showId, sessionId: sessions.value[selectedSessionIndex.value].bizShowSessionId })
+  const res: addReminderRes = await invoke("add_reminder", { showId: selectedShow.value.showId, sessionId: sessions.value[selectedSessionIndex.value].bizShowSessionId })
   if (res.statusCode == 200 && res.data.subscribed) {
     toast.success("预约抢票成功！票星球将在开售后第一时间通知您!")
   }
@@ -205,7 +205,7 @@ const grabSale = async () => {
 
 const goToTask = async () => {
   const cur_show_data: CurShowData = {
-    show: selectedConcert.value,
+    show: selectedShow.value,
     session: sessions.value[selectedSessionIndex.value],
     seatPlans: seatPlans.value,
     seatPlanIndex: selectedSeatPlanIndex.value,
@@ -228,7 +228,7 @@ interface ticketWaitlistRes {
 }
 const ticketWaitlist = async () => {
   const res: ticketWaitlistRes = await invoke("ticket_waitlist", {
-    showId: selectedConcert.value.showId,
+    showId: selectedShow.value.showId,
     sessionId: sessions.value[selectedSessionIndex.value].bizShowSessionId,
     seatPlanId: seatPlans.value[selectedSeatPlanIndex.value].seatPlanId
   })
@@ -237,7 +237,7 @@ const ticketWaitlist = async () => {
   }
 }
 
-const fetchConcerts = async () => {
+const fetchShows = async () => {
   const response: any = await invoke("search_show_list", { keyword: searchKeyword.value, sortType: sortBy.value, page: currentPage.value });
   console.log(response);
   if (response.statusCode != 200) {
@@ -247,9 +247,9 @@ const fetchConcerts = async () => {
     reachedEnd.value = true;
   } else {
     if (currentPage.value === 1) {
-      concerts.value = response.data.searchData;
+      shows.value = response.data.searchData;
     } else {
-      concerts.value = [...concerts.value, ...response.data.searchData];
+      shows.value = [...shows.value, ...response.data.searchData];
     }
     currentPage.value++;
   }
@@ -259,7 +259,7 @@ const loadNextPage = async () => {
   if (!loadingNextPage.value && !reachedEnd.value) {
     loadingNextPage.value = true;
     try {
-      await fetchConcerts();
+      await fetchShows();
     } catch (error: any) {
       console.error('加载下一页失败', error);
       toast.error(error);

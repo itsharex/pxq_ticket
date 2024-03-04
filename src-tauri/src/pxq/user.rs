@@ -1,7 +1,9 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tauri::{Manager, Wry};
+use tauri::{Manager, Window, Wry};
 use tauri_plugin_store::{with_store, StoreCollection};
 
 use super::{
@@ -64,10 +66,12 @@ pub struct UserProfileResult {
 
 #[tauri::command(async)]
 pub async fn send_verification_code(
-    app: tauri::Window,
+    app: Window,
     mobile: String,
     token: String,
 ) -> Result<SendVerificationCodeResult, PXQError> {
+    let app = Arc::new(app);
+
     let url = "https://m.piaoxingqiu.com/cyy_gatewayapi/user/pub/v3/send_verify_code";
 
     let json_data = json!({
@@ -88,9 +92,10 @@ pub async fn send_verification_code(
 
 #[tauri::command(async)]
 pub async fn generate_photo_code(
-    app: tauri::Window,
+    app: Window,
     mobile: String,
 ) -> Result<GeneratePhoneCodeResult, PXQError> {
+    let app = Arc::new(app);
     let url = "https://m.piaoxingqiu.com/cyy_gatewayapi/user/pub/v3/generate_photo_code";
     let json_data = json!({
         "src": "WEB",
@@ -109,10 +114,11 @@ pub async fn generate_photo_code(
 
 #[tauri::command(async)]
 pub async fn login_by_mobile(
-    app: tauri::Window,
+    app: Window,
     mobile: String,
     sms_code: String,
 ) -> Result<LoginResult, PXQError> {
+    let app = Arc::new(app);
     let url = "https://m.piaoxingqiu.com/cyy_gatewayapi/user/pub/v3/login_or_register";
     let json_data = json!({
         "src": "WEB",
@@ -130,7 +136,8 @@ pub async fn login_by_mobile(
 }
 
 #[tauri::command(async)]
-pub async fn get_user_profile(app: tauri::Window) -> Result<UserProfileResult, PXQError> {
+pub async fn get_user_profile(app: Window) -> Result<UserProfileResult, PXQError> {
+    let app = Arc::new(app);
     let url = "https://m.piaoxingqiu.com/cyy_gatewayapi/user/buyer/v3/profile";
     let form = json!({
         "src": "WEB",
@@ -162,7 +169,8 @@ pub struct RefreshTokenResult {
 }
 
 #[tauri::command(async)]
-pub async fn refresh_token(app: tauri::Window) -> Result<RefreshTokenResult, PXQError> {
+pub async fn refresh_token(app: Window) -> Result<RefreshTokenResult, PXQError> {
+    let app = Arc::new(app);
     let path = app
         .app_handle()
         .path_resolver()
@@ -221,7 +229,8 @@ pub struct GetUserAudiencesResult {
 }
 
 #[tauri::command(async)]
-pub async fn get_user_audiences(app: tauri::Window) -> Result<GetUserAudiencesResult, PXQError> {
+pub async fn get_user_audiences(app: Window) -> Result<GetUserAudiencesResult, PXQError> {
+    let app = Arc::new(app);
     let url = "https://m.piaoxingqiu.com/cyy_gatewayapi/user/buyer/v3/user_audiences?length=500&offset=0&src=WEB&ver=4.0.13-20240223084920";
     let form = json!({});
     let data = get(app, url, form)
@@ -232,25 +241,22 @@ pub async fn get_user_audiences(app: tauri::Window) -> Result<GetUserAudiencesRe
     Ok(result)
 }
 
-
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UserLocation {
-
-    #[serde(rename="cityId")]
+    #[serde(rename = "cityId")]
     pub city_id: String,
 
-    #[serde(rename="cityName")]
+    #[serde(rename = "cityName")]
     pub city_name: String,
 
-    #[serde(rename="provinceId")]
+    #[serde(rename = "provinceId")]
     pub province_id: String,
 
-    #[serde(rename="provinceName")]
+    #[serde(rename = "provinceName")]
     pub province_name: String,
 
-    #[serde(rename="siteId")]
-    pub site_id: String
+    #[serde(rename = "siteId")]
+    pub site_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -258,12 +264,12 @@ pub struct GetUserLocationResult {
     #[serde(rename = "statusCode")]
     status_code: i32,
     comments: String,
-    data: Option<UserLocation>
+    data: Option<UserLocation>,
 }
 
-
 #[tauri::command(async)]
-pub async fn get_user_location(app: tauri::Window) -> Result<GetUserLocationResult, PXQError> {
+pub async fn get_user_location(app: Window) -> Result<GetUserLocationResult, PXQError> {
+    let app = Arc::new(app);
     let url = "https://m.piaoxingqiu.com/cyy_gatewayapi/home/pub/v5/citys/current_location?src=WEB&ver=4.0.13-20240223084920";
     let form = json!({});
     let data = get(app, url, form)
@@ -271,5 +277,45 @@ pub async fn get_user_location(app: tauri::Window) -> Result<GetUserLocationResu
         .map_err(|_| PXQError::GetUserLocationError)?;
     let result = serde_json::from_value::<GetUserLocationResult>(data)
         .map_err(|_| PXQError::GetUserLocationError)?;
+    Ok(result)
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Address {
+    #[serde(rename = "addressId")]
+    pub address_id: String,
+
+    pub username: String,
+
+    pub cellphone: String,
+
+    #[serde(rename = "locationId")]
+    pub location_id: String,
+
+    #[serde(rename = "detailAddress")]
+    pub detail_address: String,
+
+    #[serde(rename = "isDefault")]
+    pub is_default: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetUserAddressResult {
+    #[serde(rename = "statusCode")]
+    status_code: i32,
+    comments: String,
+    data: Option<Vec<Address>>,
+}
+
+#[tauri::command(async)]
+pub async fn get_user_address(app: Window) -> Result<GetUserAddressResult, PXQError> {
+    let app = Arc::new(app);
+    let url = "https://m.piaoxingqiu.com/cyy_gatewayapi/user/buyer/v3/user/addresses?src=WEB&ver=4.0.13-20240223084920";
+    let form = json!({});
+    let data = get(app, url, form)
+        .await
+        .map_err(|_| PXQError::GetUserAddressError)?;
+    let result = serde_json::from_value::<GetUserAddressResult>(data)
+        .map_err(|_| PXQError::GetUserAddressError)?;
     Ok(result)
 }

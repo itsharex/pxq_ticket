@@ -1,4 +1,5 @@
 use thiserror::Error;
+use tokio::sync::broadcast::error;
 
 #[derive(Error, Debug)]
 pub enum PXQError {
@@ -49,6 +50,12 @@ pub enum PXQError {
 
     #[error("请在演唱会公布开售时间后再运行!")]
     ShowTimeUnknownError,
+
+    #[error("获取演出详情失败")]
+    GetShowDetailError,
+
+    #[error("获取快递价格信息失败")]
+    GetExpressPriceItemError,
 }
 
 impl serde::Serialize for PXQError {

@@ -65,14 +65,8 @@
             <div class="flex items-center mt-2">
               <p class="text-lg font-bold mr-auto">{{ show.minOriginalPrice }} 元起</p>
               <div class="flex items-center mt-2">
-                <button v-if="show.showStatus === 'PENDING' && show.latestSaleTime"
-                  class="p-2 bg-blue-500 text-white rounded-md" @click="openModal(index, BtnType.WAIT)">加入抢票</button>
-                <button v-else-if="show.showStatus === 'PENDING'" class="p-2 bg-blue-500 text-white rounded-md"
-                  @click="openModal(index, BtnType.REMIND)">添加提醒</button>
-                <button v-else-if="show.showStatus === 'ONSALE'" class="p-2 bg-blue-500 text-white rounded-md"
-                  @click="openModal(index, BtnType.BUY)">立即购买</button>
-                <button v-else-if="show.showStatus === 'PRESALE'" class="p-2 bg-blue-500 text-white rounded-md"
-                  @click="openModal(index, BtnType.SOLD_OUT)">缺票登记</button>
+                <button
+                  class="p-2 bg-blue-500 text-white rounded-md" @click="openModal(index)">去抢票</button>
               </div>
 
             </div>
@@ -125,7 +119,7 @@ const updateSeatPlans = async () => {
   seatPlans.value = sessions.value[selectedSessionIndex.value].seatPlans
   selectedSeatPlanIndex.value = 0
 }
-const openModal = async (index: number, btnType: BtnType) => {
+const openModal = async (index: number) => {
   showModal.value = true;
   selectedShow.value = shows.value[index];
   try {
@@ -136,22 +130,28 @@ const openModal = async (index: number, btnType: BtnType) => {
       seatPlans.value = sessions.value[0].seatPlans
       selectedSeatPlanIndex.value = 0
     }
+
+    const selectedSessionItem: Session = sessions.value[selectedSessionIndex.value]
+    if (selectedSessionItem.sessionStatus == 'LACK_OF_TICKET') {
+      modalBtnText.value = "缺货登记"
+      modalBtnType.value = BtnType.SOLD_OUT
+    }else if(selectedSessionItem.sessionStatus == 'ON_SALE' || selectedSessionItem.sessionStatus == 'PRE_SALE') {
+       modalBtnText.value = "立即购买"
+       modalBtnType.value = BtnType.BUY
+    }else if(selectedSessionItem.sessionStatus == 'PENDING' && selectedSessionItem.sessionSaleTime == null) {
+      modalBtnText.value = "抢票提醒"
+      modalBtnType.value = BtnType.REMIND
+    } else if (selectedSessionItem.sessionStatus == 'PENDING' && selectedSessionItem.sessionSaleTime != null) {
+       modalBtnText.value = "加入抢票"
+       modalBtnType.value = BtnType.WAIT
+    }else {
+      modalBtnText.value = "提交"
+      modalBtnType.value = BtnType.WAIT
+    }
   } catch (error:any) {
     toast.error(error)
   }
-  if (btnType == BtnType.REMIND) {
-    modalBtnText.value = "抢票提醒"
-    modalBtnType.value = BtnType.REMIND
-  } else if (btnType == BtnType.BUY) {
-    modalBtnText.value = "立即购买"
-    modalBtnType.value = BtnType.BUY
-  } else if (btnType == BtnType.WAIT) {
-    modalBtnText.value = "加入抢票"
-    modalBtnType.value = BtnType.WAIT
-  } else {
-    modalBtnText.value = "缺货登记"
-    modalBtnType.value = BtnType.SOLD_OUT
-  }
+
 };
 
 

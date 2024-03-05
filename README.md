@@ -6,11 +6,21 @@
 
 ## 使用
 
-- 手机应用商店下载票星球APP客户端或者微信小程序搜索票星球注册账号, 然后添加好观演人信息。
-- 点击[下载](https://github.com/ClassmateLin/pxq_ticket/releases)二进制包, 安装即可。
-- 使用短信验证码登录。
-- 在演出页面搜索你需要购买的演唱会，然后点击按钮之后跳转到购买页面， 选择购票数量和观众，然后点击运行即可。
+### 环境要求
+ - [nodejs](https://nodejs.org/en/download/)
+ - [rust](https://www.rust-lang.org/zh-CN/tools/install)
+ - **Rust安装慢的可以考虑换[字节源](https://rsproxy.cn/#getStarted)**
 
+### 运行
+
+- `git clone https://github.com/ClassmateLin/pxq_ticket.git && cd pxq_ticket`
+
+- `npm install`
+
+- `npm run tauri dev`
+
+
+ 
 
 ## 功能展示
 
@@ -55,18 +65,6 @@
 
 <img src="./imgs/buy_now.png" width = "640" height = "360" alt="搜索" align=center />
 
-
-## TODO
-
-- 抢购逻辑写得比较匆忙, 勉强能用, 等待完善。
-- 目前只有演出会类型可以下单成功, 其他类型的尚不支持。
-- 订单列表
-- 页面优化
-
-
-## **[进微信群的点这里或扫码](https://faka577.site/buy/2)**
-
- <img src="./imgs/qr.png" width = "400" height = "400" alt="数量" align=center />
 
 ## **[进TG群的点这里](https://faka577.site/buy/5)** 
 

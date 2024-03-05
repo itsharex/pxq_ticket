@@ -1,19 +1,20 @@
-use std::sync::Arc;
-
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::sync::Arc;
 use tauri::Window;
 use url::form_urlencoded;
 
 use super::{
-    client::{get, post},
+    client::{get, post, API_SRC, API_VER},
     error::PXQError,
+    user::get_user_location_from_cache,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BackendCategory {
     pub code: i32,
+
     #[serde(rename = "displayName")]
     pub display_name: String,
 
@@ -96,10 +97,12 @@ pub async fn search_show_list(
     let app = Arc::new(app);
     let keyword: String = form_urlencoded::byte_serialize(keyword.as_bytes()).collect();
     let offset = (page - 1) * 10;
-    let url = format!("https://m.piaoxingqiu.com/cyy_gatewayapi/home/pub/v3/show_list/search?backendCategoryCode=ALL&cityId=4455&keyword={}&length=10&offset={}&pageType=SEARCH_PAGE&sortType={}&src=WEB&ver=4.0.13-20240223084920", 
-    keyword, offset, sort_type);
+    let url = format!("cyy_gatewayapi/home/pub/v3/show_list/search?backendCategoryCode=ALL&cityId=4455&keyword={}&length=10&offset={}&pageType=SEARCH_PAGE&sortType={}&src={}&ver={}", 
+    keyword, offset, sort_type, API_SRC, API_VER);
+
+    println!("url:{}", url);
     let form = json!({});
-    let data = get(app, url.as_str(), form)
+    let data = get(app, &url, form)
         .await
         .map_err(|_| PXQError::SearchShowError)?;
 
@@ -189,13 +192,10 @@ pub async fn query_show_sessions(
 ) -> Result<QueryShowSessionsResult, PXQError> {
     let app = Arc::new(app);
 
-    let url = format!(
-        "https://m.piaoxingqiu.com/cyy_gatewayapi/show/pub/v5/show/{}/sessions",
-        show_id
-    );
+    let url = format!("cyy_gatewayapi/show/pub/v5/show/{}/sessions", show_id);
     let form = json!({
-        "src": "WEB",
-        "ver": "4.0.13-20240223084920",
+        "src": API_SRC,
+        "ver": API_VER,
         "source": "FROM_QUICK_ORDER",
         "isQueryShowBasicInfo": true,
     });
@@ -229,10 +229,13 @@ pub async fn add_reminder(
 ) -> Result<AddReminderResult, PXQError> {
     let app = Arc::new(app);
 
-    let url = format!("https://m.piaoxingqiu.com/cyy_gatewayapi/show/buyer/v3/shows/{}/subscribe?showSessionId={}", show_id, session_id);
+    let url = format!(
+        "cyy_gatewayapi/show/buyer/v3/shows/{}/subscribe?showSessionId={}",
+        show_id, session_id
+    );
     let json_data = json!({
-        "src": "WEB",
-        "ver": "4.0.13-20240223084920",
+        "src": API_SRC,
+        "ver": API_VER,
         "openId": "",
         "appId": "",
         "showId": show_id,
@@ -272,10 +275,13 @@ pub async fn ticket_waitlist(
 ) -> Result<TicketWaitlistResult, PXQError> {
     let app = Arc::new(app);
 
-    let url = format!("https://m.piaoxingqiu.com/cyy_gatewayapi/show/buyer/v3/shows/{}/subscribe?showSessionId={}", show_id, session_id);
+    let url = format!(
+        "cyy_gatewayapi/show/buyer/v3/shows/{}/subscribe?showSessionId={}",
+        show_id, session_id
+    );
     let json_data = json!({
-        "src": "WEB",
-        "ver": "4.0.13-20240223084920",
+        "src": API_SRC,
+        "ver": API_VER,
         "openId": "",
         "appId": "",
         "showId": show_id,
@@ -317,17 +323,86 @@ pub async fn get_seat_plans(
     let app = Arc::new(app);
 
     let url = format!(
-        "https://m.piaoxingqiu.com/cyy_gatewayapi/show/pub/v5/show/{}/session/{}/seat_plans",
+        "cyy_gatewayapi/show/pub/v5/show/{}/session/{}/seat_plans",
         show_id, session_id
     );
     let form = json!({
         "source": "FROM_QUICK_ORDER",
-        "src": "WEB",
-        "ver": "4.0.13-20240223084920",
+        "src": API_SRC,
+        "ver": API_VER,
     });
     let data = get(app, url.as_str(), form)
         .await
         .map_err(|_| PXQError::GetSeatPlansError)?;
     let result = serde_json::from_value(data).map_err(|_| PXQError::GetSeatPlansError)?;
     Ok(result)
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct NoteInfo {
+    name: String,
+
+    value: String,
+
+    r#type: bool,
+
+    code: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ShowDetail {
+    #[serde(rename = "rsCode")]
+    rs_code: i32,
+
+    // #[serde(rename="basicInfo")]
+    // pub basic_info: Show,
+    #[serde(rename = "noteInfos")]
+    pub note_infos: Vec<NoteInfo>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetShowDetailResult {
+    #[serde(rename = "statusCode")]
+    status_code: i32,
+    comments: String,
+    data: ShowDetail,
+}
+
+#[tauri::command(async)]
+pub async fn get_show_detail(
+    app: Window,
+    show_id: String,
+) -> Result<GetShowDetailResult, PXQError> {
+    let app = Arc::new(app);
+    let location = get_user_location_from_cache(app.clone())
+        .await
+        .map_err(|_| PXQError::GetUserLocationError)?;
+    let url = format!("cyy_gatewayapi/show/pub/v5/show/{}/static", show_id);
+    let form = json!({
+        "src": API_SRC,
+        "ver": API_VER,
+        "cityId": location.city_id,
+        "source": "FROM_QUICK_ORDER",
+        "siteId": location.site_id,
+    });
+    let data = get(app, &url, form)
+        .await
+        .map_err(|_| PXQError::ReqwestError)?;
+    let result = serde_json::from_value::<GetShowDetailResult>(data)
+        .map_err(|_| PXQError::GetShowDetailError)?;
+    Ok(result)
+}
+
+
+// 旧版库存接口
+#[tauri::command(async)]
+pub async fn get_seat_plans_stock(app: Window, show_id: String, session_id: String) -> Result<(), PXQError> {
+    let app = Arc::new(app);
+    let url = format!("cyy_gatewayapi/show/pub/v3/show/{}/show_session/{}/seat_plans_dynamic_data", show_id, session_id);
+    let form = json!({});
+    let data = get(app, url.as_str(), form)
+        .await
+        .map_err(|_| PXQError::GetSeatPlansError)?;
+    println!("{:?}", data);
+    Ok(())
 }

@@ -1,5 +1,8 @@
-use std::{string, sync::Arc, time::Duration};
+use std::fmt::Debug;
+use std::ops::Add;
+use std::{sync::Arc, time::Duration};
 
+use super::client::{API_SRC, API_VER};
 use anyhow::Result;
 use chrono::{DateTime, Local};
 use rand::Rng;
@@ -7,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::Window;
 
+use super::user::{get_user_location_from_cache, Address};
 use super::{
     client::post,
     error::PXQError,
@@ -69,10 +73,10 @@ pub async fn pre_order(
     let session_id = params.session.session_id.clone();
     let ticket_items = params.ticket_items;
 
-    let url = "https://m.piaoxingqiu.com/cyy_gatewayapi/trade/buyer/order/v5/pre_order";
+    let url = "cyy_gatewayapi/trade/buyer/order/v5/pre_order";
     let json_data = json!({
-        "src": "WEB",
-        "ver": "4.0.13-20240223084920",
+        "src": API_SRC,
+        "ver": API_VER,
         "priorityId": "",
         "items": [{
             "sku": {
@@ -88,10 +92,11 @@ pub async fn pre_order(
             }
         }]
     });
-    let data = post(app, url, json_data)
+    let data = post(app.clone(), url, json_data)
         .await
         .map_err(|_| PXQError::ReqwestError)?;
 
+    let _ = show_log(app.clone(), data.to_string().as_str()).await;
     let result =
         serde_json::from_value::<PreOrderResult>(data).map_err(|_| PXQError::PreOrderError)?;
     Ok(result)
@@ -123,6 +128,68 @@ pub struct CreateOrderResult {
     data: Option<CreateOrderData>,
 }
 
+#[derive(Debug, Clone)]
+pub struct GetExpressPriceItemParam {
+    pub seat_plan: Arc<SeatPlan>,
+    pub ticket_num: Arc<u16>,
+    pub show: Arc<Show>,
+    pub session: Arc<Session>,
+    pub ticket_items: Arc<Vec<Value>>,
+    pub deliver_method: String,
+    pub address: Address,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetExpressPriceItemResult {
+    #[serde(rename = "statusCode")]
+    status_code: i32,
+    comments: String,
+    data: Option<Vec<PriceItem>>,
+}
+
+pub async fn get_express_price_items(
+    app: Arc<Window>,
+    params: GetExpressPriceItemParam,
+) -> Result<GetExpressPriceItemResult, PXQError> {
+    let url = "cyy_gatewayapi/trade/buyer/order/v5/price_items";
+    let seat_plan_id = params.seat_plan.seat_plan_id.clone();
+    let seat_plan_price = params.seat_plan.original_price as u32;
+    let ticket_num = params.ticket_num;
+    let show_id = params.show.show_id.clone();
+    let session_id = params.session.session_id.clone();
+    let ticket_items = params.ticket_items;
+
+    let json_data = json!({
+        "src": API_SRC,
+        "ver": API_VER,
+        "productItems": [],
+        "items": [{
+            "sku": {
+                "skuId": seat_plan_id,
+                "skuType": "SINGLE",
+                "ticketPrice": seat_plan_price,
+                "qty": *ticket_num,
+                "ticketItems": *ticket_items
+            },
+            "spu": {
+                "showId": show_id,
+                "sessionId": session_id
+            },
+            "deliverMethod": params.deliver_method
+        }],
+        "locationCityId": params.address.location.location_id,
+        "addressId": params.address.address_id
+    });
+    let data = post(app.clone(), url, json_data)
+        .await
+        .map_err(|_| PXQError::ReqwestError)?;
+    let _ = show_log(app.clone(), &format!("获取快递价格信息:{}", data)).await;
+    let result = serde_json::from_value::<GetExpressPriceItemResult>(data)
+        .map_err(|_| PXQError::GetExpressPriceItemError)?;
+
+    Ok(result)
+}
+
 pub async fn create_order(
     app: Arc<Window>,
     params: CreateOrderParam,
@@ -134,9 +201,12 @@ pub async fn create_order(
     let audiences = params.audiences;
     let deliver_method = params.deliver_method;
     let session_id = params.session.session_id.clone();
+    let express_price_items = params.express_price_items;
     let mut price_item_param = Vec::new();
     let show_id = params.show.show_id.clone();
-    let payment_amount = seat_plan.original_price * *ticket_num as f64;
+
+    let mut payment_amount = seat_plan.original_price * *ticket_num as f64;
+
     for item in price_items {
         price_item_param.push(json!({
             "priceItemName": item.price_item_name,
@@ -149,6 +219,31 @@ pub async fn create_order(
         }))
     }
 
+    if params.is_express {
+        for item in express_price_items {
+            price_item_param.push(json!({
+                "priceItemId": show_id.clone(),
+                "priceItemName": item.price_item_name,
+                "priceItemVal": format!("{}", item.price_item_val),
+                "priceItemType": item.price_item_type,
+                "priceItemSpecies": item.price_item_species,
+                "direction": item.direction,
+                "applyTickets": [],
+                "priceDisplay": format!("￥{}", item.price_item_val)
+            }));
+            payment_amount += item.price_item_val;
+        }
+    }
+
+    let address_params = match params.is_express {
+        true => {
+            json!({
+                "addressId": params.address.unwrap().address_id
+            })
+        }
+        false => json!({}),
+    };
+
     let mut sku_ticket_items = Vec::new();
 
     for i in 0..ticket_items.len() {
@@ -158,14 +253,16 @@ pub async fn create_order(
         }))
     }
 
-    let url = "https://m.piaoxingqiu.com/cyy_gatewayapi/trade/buyer/order/v5/create_order";
+    let location = get_user_location_from_cache(app.clone()).await?;
+
+    let url = "cyy_gatewayapi/trade/buyer/order/v5/create_order";
 
     let json_data = json!({
-        "src": "WEB",
-        "ver": "4.0.13-20240223084920",
-        "addressParam": {},
+        "src": API_SRC,
+        "ver": API_VER,
+        "addressParam": address_params,
         "locationParam": {
-            "locationCityId": "4401"
+            "locationCityId": location.city_id
         },
         "paymentParam": {
             "totalAmount": format!("{}", payment_amount),
@@ -190,11 +287,12 @@ pub async fn create_order(
         "many2OneAudience": {}
     });
 
-    let data = post(app, url, json_data)
+    let data = post(app.clone(), url, json_data)
         .await
         .map_err(|_| PXQError::ReqwestError)?;
 
-    println!("{:?}", data);
+    let _ = show_log(app.clone(), &format!("创建订单返回数据:{}", data)).await;
+
     let result = serde_json::from_value::<CreateOrderResult>(data)
         .map_err(|_| PXQError::CreateOrderError)?;
     Ok(result)
@@ -206,13 +304,12 @@ pub struct LogMsg {
 }
 
 pub async fn show_log(app: Arc<Window>, msg: &str) -> Result<(), PXQError> {
-    app.emit(
-        "show-log",
-        LogMsg {
-            msg: msg.to_string(),
-        },
-    )
-    .map_err(|_| PXQError::AddReminderError)?;
+    let msg = msg.to_string();
+    tokio::spawn(async move {
+        let _ = app
+            .emit("show-log", LogMsg { msg })
+            .map_err(|_| PXQError::AddReminderError);
+    });
     Ok(())
 }
 
@@ -254,15 +351,23 @@ pub struct BuyTicketParam {
     ticket_num: u16,
 
     audiences: Vec<UserAudienceData>,
+
+    address: Option<Address>,
+
+    #[serde(rename = "isExpress")]
+    is_express: bool, // 是否快递票
+
+    #[serde(rename = "isRealname")]
+    is_realname: bool, // 是否实名
 }
 
 #[derive(Debug, Clone)]
 pub struct PreOrderParam {
-    seat_plan: Arc<SeatPlan>,
-    ticket_num: Arc<u16>,
-    show: Arc<Show>,
-    session: Arc<Session>,
-    ticket_items: Arc<Vec<Value>>,
+    pub seat_plan: Arc<SeatPlan>,
+    pub ticket_num: Arc<u16>,
+    pub show: Arc<Show>,
+    pub session: Arc<Session>,
+    pub ticket_items: Arc<Vec<Value>>,
 }
 
 #[derive(Debug, Clone)]
@@ -275,6 +380,9 @@ pub struct CreateOrderParam {
     ticket_items: Arc<Vec<Value>>,
     audiences: Arc<Vec<UserAudienceData>>,
     deliver_method: String,
+    is_express: bool,
+    express_price_items: Vec<PriceItem>,
+    address: Option<Address>,
 }
 
 pub async fn start(app: Arc<Window>, params: Arc<BuyTicketParam>) -> Result<bool, PXQError> {
@@ -302,9 +410,31 @@ pub async fn start(app: Arc<Window>, params: Arc<BuyTicketParam>) -> Result<bool
         ticket_items: ticket_items.clone(),
     };
     let res = pre_order(app.clone(), pre_order_param).await?;
+
     let _ = show_log(app.clone(), &format!("预下单返回数据:{:?}", res)).await;
     if res.status_code == 200 {
         let _ = show_log(app.clone(), "预下单成功, 开始提交订单").await;
+        let deliver_method = res.data.support_deliveries[0].name.clone();
+        let mut express_price_items = Vec::new();
+        if params.is_express {
+            // 快递票
+            let get_express_price_item_res = get_express_price_items(
+                app.clone(),
+                GetExpressPriceItemParam {
+                    seat_plan: seat_plan.clone(),
+                    ticket_num: ticket_num.clone(),
+                    show: show.clone(),
+                    session: session.clone(),
+                    ticket_items: ticket_items.clone(),
+                    deliver_method: deliver_method.clone(),
+                    address: params.address.clone().unwrap(),
+                },
+            )
+            .await?;
+            if get_express_price_item_res.status_code == 200 {
+                express_price_items = get_express_price_item_res.data.unwrap();
+            }
+        }
         let create_order_params = CreateOrderParam {
             price_items: res.data.price_items,
             seat_plan: seat_plan.clone(),
@@ -313,17 +443,18 @@ pub async fn start(app: Arc<Window>, params: Arc<BuyTicketParam>) -> Result<bool
             show: show.clone(),
             ticket_items: ticket_items.clone(),
             audiences: audiences.clone(),
-            deliver_method: res.data.support_deliveries[0].name.clone(),
+            deliver_method: deliver_method.clone(),
+            express_price_items,
+            is_express: params.is_express,
+            address: params.address.clone(),
         };
         let create_order_res = create_order(app.clone(), create_order_params).await?;
-        let msg = format!("创建订单返回数据: {:?}", create_order_res);
         if create_order_res.status_code == 200 {
             let _ = show_log(
                 app.clone(),
                 &format!(
-                    "创建订单成功, 订单号:{}, 请及时打开APP付款!\n{}",
+                    "\n**********创建订单成功, 订单号:{}, 请及时打开APP付款!************\n\n\n\n\n\n\n\\n",
                     create_order_res.data.unwrap().order_number,
-                    msg
                 ),
             )
             .await;
@@ -331,13 +462,17 @@ pub async fn start(app: Arc<Window>, params: Arc<BuyTicketParam>) -> Result<bool
         } else {
             let _ = show_log(
                 app.clone(),
-                &format!("创建订单失败, {}\n{}", create_order_res.comments, msg,),
+                &format!("创建订单失败, {}\n", create_order_res.comments),
             )
             .await;
             return Err(PXQError::CreateOrderError);
         }
     } else {
-        let _ = show_log(app.clone(), "预下单失败, 停止运行...").await;
+        let _ = show_log(
+            app.clone(),
+            &format!("预下单失败, {}, 停止运行...", res.comments),
+        )
+        .await;
         return Err(PXQError::PreOrderError);
     }
     Ok(false)
@@ -372,7 +507,7 @@ pub async fn buy_tickets(app: tauri::Window, params: BuyTicketParam) -> Result<(
     show_log(app.clone(), &msg).await?;
 
     let session_status = session.session_status.clone();
-    if session_status == "ON_SALE" {
+    if session_status == "ON_SALE" || session_status == "PRE_SALE" {
         let is_success = start(app.clone(), params).await?;
         if is_success {
             let _ = show_log(app.clone(), "购票成功, 停止运行...").await;
@@ -389,6 +524,7 @@ pub async fn buy_tickets(app: tauri::Window, params: BuyTicketParam) -> Result<(
         .await;
         return Err(PXQError::ShowTimeUnknownError);
     }
+
     let session_start_time = session_start_time.unwrap();
     let (s, r) = async_channel::unbounded::<bool>();
     let (exit_s, exit_r) = async_channel::unbounded::<bool>();
@@ -425,7 +561,7 @@ pub async fn buy_tickets(app: tauri::Window, params: BuyTicketParam) -> Result<(
                 }
 
                 _ = r.recv() => {
-                    for _ in 0..5 {
+                    for _ in 0..10 {
                       match start(app.clone(), params.clone()).await {
                           Ok(is_success) => {
                             if is_success {
@@ -436,6 +572,7 @@ pub async fn buy_tickets(app: tauri::Window, params: BuyTicketParam) -> Result<(
                             let _ = show_log(app.clone(), e.to_string().as_str()).await;
                           },
                       };
+                      tokio::time::sleep(Duration::from_millis(100)).await;
                     }
                     return Ok(());
                 }

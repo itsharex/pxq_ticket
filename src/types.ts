@@ -106,7 +106,7 @@ export type CurShowData = {
     show: Show,
     session: Session,
     seatPlans: SeatPlan[],
-    seatPlanIndex: number
+    seatPlanIndex: number,
 }
 
 export type GetUserAudiencesResult = {
@@ -143,6 +143,64 @@ export type BuyTicketParam = {
     session: Session,
     seatPlan: SeatPlan,
     ticketNum: number,
-    audiences: Audiences[]
+    audiences: Audiences[],
+    isRealname: boolean,
+    isExpress: boolean,
+    address: Address | null
 }
 
+export type NoteInfo = {
+
+    name: string,
+
+    value: string,
+
+    type: boolean,
+
+    code: string
+}
+
+export type ShowDetail = {
+    rsCode: number
+    basicInfo: Show,
+    noteInfos: NoteInfo[]
+}
+
+export type GetShowDetailResult = {
+    statusCode: number,
+    comments: string,
+    data: ShowDetail
+}
+
+export type AddressLocation = {
+
+    location_id: string,
+
+    province: string,
+
+    city: string,
+
+    district: string,
+}
+
+
+export type Address = {
+    addressId: string
+
+    username: string,
+
+    cellphone: string,
+
+    detailAddress: string,
+
+    isDefault: boolean,
+
+    location: AddressLocation,
+}
+
+
+export type GetAddressResult = {
+    statusCode: number,
+    comments: string,
+    data: Address[]
+}

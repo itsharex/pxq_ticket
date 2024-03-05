@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { get_value, set_value } from './store';
 import router from './router';
 import { toast } from 'vue3-toastify';
 import { invoke } from '@tauri-apps/api';
-import { GetUserLocationResult } from './types';
+import { GetUserLocationResult, RefreshTokenResult } from './types';
+
+const timer = ref(0);
+
 
 onMounted(async () => {
   try {
@@ -19,7 +22,6 @@ onMounted(async () => {
     toast.error(error)
   }
 
-
   try {
 
     const user_location_res: GetUserLocationResult = await invoke("get_user_location")
@@ -30,6 +32,19 @@ onMounted(async () => {
   } catch (error: any) {
       toast.error("获取用户地区失败:" + error);
   }
+  timer.value = setInterval(async () => {
+    const res: RefreshTokenResult = await invoke('refresh_token');
+    if (res.statusCode == 200) {
+        console.log(`刷新token:${res}`)
+    }else {
+      console.log("刷新失败:", res);
+    }
+  }, 1000 * 60 * 30);
+})
+
+
+onBeforeUnmount(async () => {
+  clearInterval(timer.value);
 })
 </script>
 

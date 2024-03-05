@@ -70,6 +70,7 @@ jobs:
         run: npm run tauri build
 
       - name: Build App
+        id: pxq-release
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
@@ -79,3 +80,11 @@ jobs:
           releaseBody: ${{ github.event.head_commit.message }}
           releaseDraft: false
           prerelease: true
+
+      - name: Send assets to Telegram
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          document: ${{ steps.pxq-release.outputs.artifactPaths }}
+

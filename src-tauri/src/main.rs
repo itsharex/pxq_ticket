@@ -1,6 +1,5 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
 use tauri::Manager;
 
 use pxq_ticket::pxq;
@@ -11,7 +10,8 @@ struct Payload {
     cwd: String,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let manager = tauri::Builder::default()
         .setup(|app| {
             #[cfg(debug_assertions)] // only include this code on debug builds
@@ -36,11 +36,14 @@ fn main() {
             pxq::user::get_user_profile,
             pxq::user::get_user_audiences,
             pxq::user::get_user_location,
+            pxq::user::get_user_address,
             pxq::show::search_show_list,
             pxq::show::query_show_sessions,
             pxq::show::add_reminder,
             pxq::show::ticket_waitlist,
             pxq::show::get_seat_plans,
+            pxq::show::get_show_detail,
+            pxq::show::get_seat_plans_stock,
             pxq::order::buy_tickets,
         ])
         .run(tauri::generate_context!())

@@ -393,12 +393,18 @@ pub async fn get_show_detail(
     Ok(result)
 }
 
-
 // 旧版库存接口
 #[tauri::command(async)]
-pub async fn get_seat_plans_stock(app: Window, show_id: String, session_id: String) -> Result<(), PXQError> {
+pub async fn get_seat_plans_stock(
+    app: Window,
+    show_id: String,
+    session_id: String,
+) -> Result<(), PXQError> {
     let app = Arc::new(app);
-    let url = format!("cyy_gatewayapi/show/pub/v3/show/{}/show_session/{}/seat_plans_dynamic_data", show_id, session_id);
+    let url = format!(
+        "cyy_gatewayapi/show/pub/v3/show/{}/show_session/{}/seat_plans_dynamic_data",
+        show_id, session_id
+    );
     let form = json!({});
     let data = get(app, url.as_str(), form)
         .await

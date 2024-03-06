@@ -53,7 +53,7 @@ pub struct LoginResult {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UserProfile {
     pub nickname: String,
-    pub avatar: String,
+    pub avatar: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -146,6 +146,8 @@ pub async fn get_user_profile(app: Window) -> Result<UserProfileResult, PXQError
     let data = get(app, url, form)
         .await
         .map_err(|_| PXQError::GetUserProfileError)?;
+
+    println!("{:?}", data);
     let user_profile_result =
         serde_json::from_value(data).map_err(|_| PXQError::GetUserProfileError)?;
     Ok(user_profile_result)
@@ -185,7 +187,7 @@ pub async fn refresh_token_internal(app: Arc<Window>) -> Result<RefreshTokenResu
     }
 
     let token = token.unwrap().to_string().replace('"', "");
-    
+
     let url = format!(
         "cyy_gatewayapi/user/pub/v3/refresh_token?refreshToken={}",
         token

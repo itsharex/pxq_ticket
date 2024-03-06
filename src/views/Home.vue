@@ -9,6 +9,7 @@ import router from "../router";
 import { set_value } from "../store";
 
 const avatarSrc = ref("")
+const nickname = ref("")
 
 const onClickGithub = () => {
   shell.open('https://github.com/ClassmateLin/pxq_ticket')
@@ -21,6 +22,7 @@ onMounted(async ()=>{
     console.log(res)
     if (res.statusCode == 200) {
       avatarSrc.value = res.data.avatar
+      nickname.value = res.data.nickname
       toast.success(`用户:${res.data.nickname}登录成功`)
       return
     }else{
@@ -78,9 +80,12 @@ const logout = async () => {
           <div class="w-10 rounded-full">
             <img alt="Tailwind CSS Navbar component" :src="avatarSrc" />
           </div>
+          <div>
+            <label>{{ nickname }}</label>
+          </div>
         </div>
         <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-          <li @click="logout"><a>退出</a></li>
+          <li @click="logout"><a class="text-center">退出</a></li>
         </ul>
       </div>
     </div>

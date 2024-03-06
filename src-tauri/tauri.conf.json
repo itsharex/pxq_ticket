@@ -2,13 +2,13 @@
   "build": {
     "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
-    "devPath": "http://localhost:1420",
+    "devPath": "http://localhost:1421",
     "distDir": "../dist",
     "withGlobalTauri": true
   },
   "package": {
     "productName": "pxq_ticket",
-    "version": "0.1.3"
+    "version": "0.1.4"
   },
   "tauri": {
     "allowlist": {

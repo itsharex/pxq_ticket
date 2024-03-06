@@ -1,0 +1,25 @@
+name: Upload to Telegram
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  upload_to_telegram:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+        
+    - name: Install dependencies
+      run: pip install requests python-telegram-bot --user
+      
+    - name: Execute Python script
+      run: |
+        python upload_to_telegram.py ${{ secrets.TELEGRAM_BOT_TOKEN }} ${{ secrets.OWNER }} ${{ secrets.REPO }}

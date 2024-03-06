@@ -1,7 +1,9 @@
-use std::sync::Arc;
-
 use super::error::PXQError;
 use anyhow::Result;
+use chrono::Local;
+use std::sync::Arc;
+
+use rand::Rng;
 use reqwest::Client;
 use serde_json::Value;
 use tauri::{Manager, Window, Wry};
@@ -12,7 +14,6 @@ const HOST: &'static str = "m.piaoxingqiu.com";
 pub const API_VER: &'static str = "4.1.2-20240305183007";
 pub const API_SRC: &'static str = "WEB";
 const TERMINAL_SRC: &'static str = "WEB";
-
 
 pub async fn get_http_client() -> Result<Client> {
     let client = reqwest::Client::builder()
@@ -47,7 +48,6 @@ pub async fn get_access_token(app: Arc<Window>) -> Result<String> {
     })
 }
 
-
 pub async fn get_user_location(app: Arc<Window>) -> Result<String> {
     let path = app
         .app_handle()
@@ -76,7 +76,6 @@ pub async fn get(
     url: &str,
     form: serde_json::Value,
 ) -> Result<serde_json::Value> {
-
     let url = format!("https://{}/{}", HOST, url);
 
     let client = get_http_client()
@@ -111,8 +110,9 @@ pub async fn post(app: Arc<Window>, url: &str, json_data: Value) -> Result<serde
     let url = format!("https://{}/{}", HOST, url);
     let client = get_http_client().await?;
     let access_token = get_access_token(app).await?;
-    let data = client
-        .post(url)
+
+    let mut request = client
+        .post(&url)
         .json(&json_data)
         .header("access-token", access_token)
         .header("host", HOST)
@@ -120,7 +120,15 @@ pub async fn post(app: Arc<Window>, url: &str, json_data: Value) -> Result<serde
         .header("ver", API_VER)
         .header("content-type", "application/json")
         .header("origin", format!("https://{}", HOST))
-        .header("referer", format!("https://{}", HOST))
+        .header("referer", format!("https://{}", HOST));
+
+    if url.contains("create_order") {
+        let black_box = get_black_box();
+        println!("black_box:{}", black_box);
+        request = request.header("Blackbox", black_box);
+    }
+
+    let data = request
         .send()
         .await
         .map_err(|_| PXQError::ReqwestError)?
@@ -129,4 +137,27 @@ pub async fn post(app: Arc<Window>, url: &str, json_data: Value) -> Result<serde
         .map_err(|_| PXQError::ReqwestError)?;
 
     Ok(data)
+}
+
+fn random_str(len: usize) -> String {
+    let char_set = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let mut rng = rand::thread_rng();
+    (0..len)
+        .map(|_| rng.gen_range(0..char_set.len()))
+        .map(|i| char_set.chars().nth(i).unwrap())
+        .collect()
+}
+
+fn box_str(td: &str) -> String {
+    let mut td_chars: Vec<char> = td.chars().collect();
+    td_chars[0] = random_str(1).chars().nth(0).unwrap();
+    td_chars.insert(4, random_str(1).chars().nth(0).unwrap());
+    td_chars.insert(15, random_str(1).chars().nth(0).unwrap());
+    td_chars.insert(td_chars.len() - 1, random_str(1).chars().nth(0).unwrap());
+    td_chars.into_iter().collect()
+}
+
+fn get_black_box() -> String {
+    let timestamp = Local::now().timestamp();
+    box_str(&format!("{}{}{}", random_str(4), timestamp, random_str(9)))
 }

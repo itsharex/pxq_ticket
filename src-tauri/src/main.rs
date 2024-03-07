@@ -45,6 +45,8 @@ async fn main() {
             pxq::show::get_show_detail,
             pxq::show::get_seat_plans_stock,
             pxq::order::buy_tickets,
+            pxq::order::get_pending_orders,
+            pxq::order::get_terminate_orders,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

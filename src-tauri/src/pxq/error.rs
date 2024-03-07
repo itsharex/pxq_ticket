@@ -56,6 +56,14 @@ pub enum PXQError {
 
     #[error("获取快递价格信息失败")]
     GetExpressPriceItemError,
+
+
+    #[error("获取进行中订单列表失败")]
+    GetPendingOrderListError,
+
+
+    #[error("获取历史订单列表失败")]
+    GetTerminateOrderListError,
 }
 
 impl serde::Serialize for PXQError {

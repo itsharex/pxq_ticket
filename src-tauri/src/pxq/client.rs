@@ -139,6 +139,38 @@ pub async fn post(app: Arc<Window>, url: &str, json_data: Value) -> Result<serde
     Ok(data)
 }
 
+pub async fn app_post(app: Arc<Window>, url: &str, json_data: Value) -> Result<serde_json::Value> {
+    let client = get_http_client().await?;
+    let access_token = get_access_token(app).await?;
+    let host = "appapi.caiyicloud.com";
+
+    let mut request = client
+        .post(url)
+        .json(&json_data)
+        .header("access-token", access_token)
+        .header("host", host)
+        .header("terminal-src", "ANDROID")
+        .header("ver", API_VER)
+        .header("content-type", "application/json")
+        .header("origin", format!("https://{}", host))
+        .header("referer", format!("https://{}", host));
+
+    if url.contains("create_order") {
+        let black_box = get_black_box();
+        request = request.header("Blackbox", black_box);
+    }
+
+    let data = request
+        .send()
+        .await
+        .map_err(|_| PXQError::ReqwestError)?
+        .json::<serde_json::Value>()
+        .await
+        .map_err(|_| PXQError::ReqwestError)?;
+
+    Ok(data)
+}
+
 fn random_str(len: usize) -> String {
     let char_set = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let mut rng = rand::thread_rng();

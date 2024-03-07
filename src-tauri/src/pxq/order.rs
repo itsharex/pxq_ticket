@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use std::ops::Add;
 use std::{sync::Arc, time::Duration};
 
-use super::client::{API_SRC, API_VER};
+use super::client::{app_post, API_SRC, API_VER};
 use anyhow::Result;
 use chrono::{DateTime, Local};
 use rand::Rng;
@@ -73,11 +73,13 @@ pub async fn pre_order(
     let session_id = params.session.session_id.clone();
     let ticket_items = params.ticket_items;
 
-    let url = "cyy_gatewayapi/trade/buyer/order/v5/pre_order";
+    let url = "https://appapi.caiyicloud.com/cyy_gatewayapi/trade/buyer/order/v5/pre_order?bizCode=FHL_M&src=android";
     let json_data = json!({
-        "src": API_SRC,
-        "ver": API_VER,
-        "priorityId": "",
+        "priorityParam": {
+            "priorityId": "",
+            "objectId": "",
+            "objectType": ""
+        },
         "items": [{
             "sku": {
                 "skuId": seat_plan_id,
@@ -90,9 +92,13 @@ pub async fn pre_order(
                 "showId": show_id,
                 "sessionId": session_id
             }
-        }]
+        }],
+        "preFiled": {
+            "addressId": "",
+            "audienceIds": []
+        }
     });
-    let data = post(app.clone(), url, json_data)
+    let data = app_post(app.clone(), url, json_data)
         .await
         .map_err(|_| PXQError::ReqwestError)?;
 
@@ -151,7 +157,7 @@ pub async fn get_express_price_items(
     app: Arc<Window>,
     params: GetExpressPriceItemParam,
 ) -> Result<GetExpressPriceItemResult, PXQError> {
-    let url = "cyy_gatewayapi/trade/buyer/order/v5/price_items";
+    let url = "https://appapi.caiyicloud.com/cyy_gatewayapi/trade/buyer/order/v5/price_items";
     let seat_plan_id = params.seat_plan.seat_plan_id.clone();
     let seat_plan_price = params.seat_plan.original_price as u32;
     let ticket_num = params.ticket_num;
@@ -160,9 +166,11 @@ pub async fn get_express_price_items(
     let ticket_items = params.ticket_items;
 
     let json_data = json!({
-        "src": API_SRC,
-        "ver": API_VER,
-        "productItems": [],
+        "priorityParam": {
+            "priorityId": "",
+            "objectId": "",
+            "objectType": ""
+        },
         "items": [{
             "sku": {
                 "skuId": seat_plan_id,
@@ -180,7 +188,7 @@ pub async fn get_express_price_items(
         "locationCityId": params.address.location.location_id,
         "addressId": params.address.address_id
     });
-    let data = post(app.clone(), url, json_data)
+    let data = app_post(app.clone(), url, json_data)
         .await
         .map_err(|_| PXQError::ReqwestError)?;
     let _ = show_log(app.clone(), &format!("获取快递价格信息:{}", data)).await;
@@ -209,27 +217,55 @@ pub async fn create_order(
 
     for item in price_items {
         price_item_param.push(json!({
-            "priceItemName": item.price_item_name,
+
             "priceItemVal": format!("{}", item.price_item_val),
-            "priceItemType": item.price_item_type,
-            "priceItemSpecies": item.price_item_species,
+            "priceDisplay": format!("￥{}", item.price_item_val),
+            "priceItemName": item.price_item_name,
             "direction": item.direction,
-            "applyTickets": [],
-            "priceDisplay": format!("￥{}", item.price_item_val)
+            "priceItemType": item.price_item_type,
+            "subPriceItemType": "",
+            "priceItemId": show_id,
+            "priceItemIdType": "",
+            "priceItemDesc": "",
+            "discountId": "",
+            "priceItemSpecies": item.price_item_species,
+            "skuId": "",
+            "subPriceItemId": null,
+            "applyTickets": [
+
+            ],
+            "applyProducts": [
+
+            ],
+            "itemId": "",
+            "deliverVal": "0"
         }))
     }
 
     if params.is_express {
         for item in express_price_items {
             price_item_param.push(json!({
-                "priceItemId": show_id.clone(),
-                "priceItemName": item.price_item_name,
+
                 "priceItemVal": format!("{}", item.price_item_val),
-                "priceItemType": item.price_item_type,
-                "priceItemSpecies": item.price_item_species,
+                "priceDisplay": format!("￥{}", item.price_item_val),
+                "priceItemName": item.price_item_name,
                 "direction": item.direction,
+                "priceItemType": item.price_item_type,
+                "subPriceItemType": "",
+                "priceItemId": show_id.clone(),
+                "priceItemIdType": "",
+                "priceItemDesc": "",
+                "discountId": "",
+                "priceItemSpecies": item.price_item_species,
+                "skuId": "",
+                "subPriceItemId": null,
                 "applyTickets": [],
-                "priceDisplay": format!("￥{}", item.price_item_val)
+                "applyProducts": [
+
+                ],
+                "itemId": "",
+                "deliverVal": "0"
+
             }));
             payment_amount += item.price_item_val;
         }
@@ -238,7 +274,17 @@ pub async fn create_order(
     let address_params = match params.is_express {
         true => {
             json!({
-                "addressId": params.address.unwrap().address_id
+                "addressId": params.address.clone().unwrap().address_id
+            })
+        }
+        false => json!({}),
+    };
+
+    let contact_param = match params.is_express {
+        true => {
+            json!({
+                "receiver": params.address.clone().unwrap().username,
+                "cellphone": params.address.unwrap().cellphone,
             })
         }
         false => json!({}),
@@ -255,12 +301,9 @@ pub async fn create_order(
 
     let location = get_user_location_from_cache(app.clone()).await?;
 
-    let url = "cyy_gatewayapi/trade/buyer/order/v5/create_order";
+    let url = "https://appapi.caiyicloud.com/cyy_gatewayapi/trade/buyer/order/v5/create_order?bizCode=FHL_M&src=android";
 
-    let json_data = json!({
-        "src": API_SRC,
-        "ver": API_VER,
-        "addressParam": address_params,
+    let mut json_data = json!({
         "locationParam": {
             "locationCityId": location.city_id
         },
@@ -283,11 +326,20 @@ pub async fn create_order(
             },
             "deliverMethod": deliver_method
         }],
-        "priorityId": "",
-        "many2OneAudience": {}
+        "priorityParam": {
+            "priorityId": "",
+            "objectId": "",
+            "objectType": ""
+        },
+        "showGroupId": ""
     });
 
-    let data = post(app.clone(), url, json_data)
+    if params.is_express {
+        json_data["addressParam"] = address_params;
+        json_data["contactParam"] = contact_param;
+    }
+
+    let data = app_post(app.clone(), url, json_data)
         .await
         .map_err(|_| PXQError::ReqwestError)?;
 
@@ -313,9 +365,9 @@ pub async fn show_log(app: Arc<Window>, msg: &str) -> Result<(), PXQError> {
     Ok(())
 }
 
-fn random_number_str() -> String {
+fn random_number_str(len: usize) -> String {
     let mut random_number = rand::thread_rng().gen_range(1..=10000).to_string();
-    while random_number.len() != 5 {
+    while random_number.len() != len {
         random_number = format!("0{}", random_number);
     }
     random_number
@@ -397,7 +449,13 @@ pub async fn start(app: Arc<Window>, params: Arc<BuyTicketParam>) -> Result<bool
     let mut ticket_items = Vec::new();
     for _ in 0..audiences.len() {
         ticket_items.push(json!({
-            "id": format!("{}1000{}", current_time, random_number_str())
+            "comboItemId": "",
+            "seatConcreteId": null,
+            "seatGroupId": null,
+            "ticketSeatId": null,
+            "zoneConcreteId": null,
+            "id": format!("{}100{}", current_time % 1000, random_number_str(4)),
+            "combinedTicketPhoto": ""
         }))
     }
     let ticket_items = Arc::new(ticket_items);
@@ -453,7 +511,7 @@ pub async fn start(app: Arc<Window>, params: Arc<BuyTicketParam>) -> Result<bool
             let _ = show_log(
                 app.clone(),
                 &format!(
-                    "\n**********创建订单成功, 订单号:{}, 请及时打开APP付款!************\n\n\n\n\n\n\n\\n",
+                    "\n**********创建订单成功, 订单号:{}, 请及时打开APP付款!************\n",
                     create_order_res.data.unwrap().order_number,
                 ),
             )
@@ -578,4 +636,92 @@ pub async fn buy_tickets(app: tauri::Window, params: BuyTicketParam) -> Result<(
                 }
         }
     }
+}
+
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct OrderDetailState {
+    #[serde(rename="displayName")]
+    pub display_name: String
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Order { 
+    #[serde(rename="orderId")]
+    pub order_id: String,
+
+    #[serde(rename="orderNumber")]
+    pub order_number: String,
+
+    #[serde(rename="firstShowName")]
+    pub first_show_name: String,
+
+    #[serde(rename="qty")]
+    pub num: i32,
+
+    #[serde(rename="displayPosterURL")]
+    pub display_poster_url: String,
+
+    #[serde(rename="payAmount")]
+    pub pay_amount: f64,
+
+    #[serde(rename="orderDetailState")]
+    pub order_detail_state: OrderDetailState,
+
+    #[serde(rename="firstSessionName")]
+    pub firsts_ession_name: String,
+
+    #[serde(rename="cityName")]
+    pub city_name: String,
+
+    #[serde(rename="showTimeDesc")]
+    pub show_time_desc: String,
+
+    #[serde(rename="firstVenueName")]
+    pub first_venue_name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetPendingOrderListResult {
+    #[serde(rename = "statusCode")]
+    status_code: i32,
+    comments: String,
+    data: Option<Vec<Order>>
+}
+
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetTerminateOrderListResult {
+    #[serde(rename = "statusCode")]
+    status_code: i32,
+    comments: String,
+    data: Option<Vec<Order>>
+}
+
+#[tauri::command(async)]
+pub async fn get_pending_orders(app: Window)-> Result<GetPendingOrderListResult, PXQError>{
+    let app = Arc::new(app);
+    let url = "cyy_gatewayapi/trade/buyer/order/v3/order_list?length=10&offset=0&orderStatusQuery=ONGOING";
+    let json_data = json!({
+        "src": API_SRC,
+        "ver": API_VER,
+    });
+    let data = post(app, url, json_data).await.map_err(|_|PXQError::ReqwestError)?;
+    let result = serde_json::from_value(data).map_err(|_|PXQError::GetPendingOrderListError)?;
+    Ok(result)
+}
+
+
+#[tauri::command(async)]
+pub async fn get_terminate_orders(app: Window)-> Result<GetTerminateOrderListResult, PXQError> {
+    let app = Arc::new(app);
+    let url = "cyy_gatewayapi/trade/buyer/order/v3/order_list?length=10&offset=0&orderStatusQuery=TERMINATED";
+    let json_data = json!({
+        "src": API_SRC,
+        "ver": API_VER,
+    });
+    let data = post(app, url, json_data).await.map_err(|_|PXQError::ReqwestError)?;
+
+    let result = serde_json::from_value(data).map_err(|_|PXQError::GetTerminateOrderListError)?;
+    Ok(result)
 }

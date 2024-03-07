@@ -41,19 +41,6 @@ export type RefreshTokenResult = {
     }
 }
 
-export type Order = {
-    id: number,
-    items: OrderItem[],
-}
-
-export type OrderItem = {
-    id: number,
-    image: string,
-    title: string,
-    quantity: number,
-    price: number,
-}
-
 
 export type Show = {
     showId: string
@@ -203,4 +190,30 @@ export type GetAddressResult = {
     statusCode: number,
     comments: string,
     data: Address[]
+}
+
+export type Order = {
+    orderId: string,
+    orderNumber: string,
+    firstShowName: string,
+    qty: number,
+    displayPosterURL: string,
+    payAmount: number,
+    orderDetailState: {
+        displayName: string
+    }
+    firstSessionName: string,
+
+    cityName: string,
+
+    showTimeDesc: string,
+
+    firstVenueName: string
+}
+
+
+export type GetOrdersResult = {
+    statusCode: number,
+    comments: string,
+    data: Order[]
 }

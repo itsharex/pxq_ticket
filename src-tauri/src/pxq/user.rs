@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::json;
 use tauri::{Manager, Window, Wry};
 use tauri_plugin_store::{with_store, StoreCollection};
 

@@ -4,27 +4,9 @@
 
 基于 Tauri 开发的跨平台票星球客户端，可在 Linux、Windows 和 macOS 等操作系统上使用。
 
-## 使用
-
-### 环境要求
- - [nodejs](https://nodejs.org/en/download/)
- - [rust](https://www.rust-lang.org/zh-CN/tools/install)
- - **Rust安装慢的可以考虑换[字节源](https://rsproxy.cn/#getStarted)**
-
-### 运行
-
-- `git clone https://github.com/ClassmateLin/pxq_ticket.git && cd pxq_ticket`
-
-- `npm install`
-
-- `npm run tauri dev`
-
-
- 
-
 ## 功能展示
 
-## 短信登录
+### 短信登录
 
 - 无图片验证码:
 
@@ -34,7 +16,7 @@
 
 <img src="./imgs/sms_login_2.png" width = "640" height = "360" alt="有图形验证码登录" align=center />
 
-## 搜索演出
+### 搜索演出
 
 <img src="./imgs/show_search_1.png" width = "640" height = "360" alt="搜索" align=center />
 
@@ -45,7 +27,7 @@
 <img src="./imgs/show_search_4.png" width = "640" height = "360" alt="搜索" align=center />
 
 
-### 按钮说明
+#### 按钮说明
 
 - 添加提醒: 官方确定会出售此演出的票, 但是未公布开售时间, 添加提醒之后, 当演唱会公布开售日期后会收到提醒短信。
 
@@ -66,7 +48,44 @@
 <img src="./imgs/buy_now.png" width = "640" height = "360" alt="搜索" align=center />
 
 
-## **[进TG群的点这里](https://faka577.site/buy/5)** 
+### 任务
+
+- <img src="./imgs/tasks.png" width = "640" height = "360" alt="搜索" align=center />
+
+
+### 订单列表
+
+- <img src="./imgs/orders.png" width = "640" height = "360" alt="搜索" align=center />
+
+
+
+
+
+
+## 使用
+
+### 源码方式运行
+
+### 环境要求
+ - [nodejs](https://nodejs.org/en/download/)
+ - [rust](https://www.rust-lang.org/zh-CN/tools/install), **Rust安装慢的可以考虑换[字节源](https://rsproxy.cn/#getStarted)**
+
+ - `git clone https://github.com/ClassmateLin/pxq_ticket.git && cd pxq_ticket`
+
+ - `npm install`
+
+ - 运行: `npm run tauri dev`
+
+ - 编译: `npm run tauri build`
+
+### 安装包
+
+ - 直接安装即可。
+
+
+#### **[进TG群的点这里](https://faka577.site/buy/5)** 
+
+
 
 
 ## 特别声明

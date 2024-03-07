@@ -97,5 +97,11 @@ jobs:
       run: pip install requests python-telegram-bot --user
       
     - name: Execute Python script
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }} 
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }} 
+        OWNER: ${{ secrets.OWNER }} 
+        REPO: ${{ secrets.REPO }} 
+        ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
       run: |
-        python upload_to_telegram.py ${{ secrets.TELEGRAM_BOT_TOKEN }} ${{ secrets.TELEGRAM_CHAT_ID }} ${{ secrets.OWNER }} ${{ secrets.REPO }} ${{ secrets.ACCESS_TOKEN }}
+        python upload_to_telegram.py

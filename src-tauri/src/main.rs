@@ -13,13 +13,13 @@ struct Payload {
 #[tokio::main]
 async fn main() {
     let manager = tauri::Builder::default()
-        .setup(|app| {
-            #[cfg(debug_assertions)] // only include this code on debug builds
-            {
-                let window = app.get_window("main").unwrap();
-                window.open_devtools();
-                window.close_devtools();
-            }
+        .setup(|_app| {
+            // #[cfg(debug_assertions)] // only include this code on debug builds
+            // {
+            //     let window = app.get_window("main").unwrap();
+            //     window.open_devtools();
+            //     window.close_devtools();
+            // }
             Ok(())
         })
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {

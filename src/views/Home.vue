@@ -23,6 +23,7 @@ onMounted(async ()=>{
     if (res.statusCode == 200) {
       avatarSrc.value = res.data.avatar
       nickname.value = res.data.nickname
+      await set_value('user_info', res.data)
       toast.success(`用户:${res.data.nickname}登录成功`)
       return
     }else{

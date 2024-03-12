@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::json;
 use tauri::{Manager, Window, Wry};
 use tauri_plugin_store::{with_store, StoreCollection};
 
@@ -54,6 +54,8 @@ pub struct LoginResult {
 pub struct UserProfile {
     pub nickname: String,
     pub avatar: Option<String>,
+    #[serde(rename = "bizUserId")]
+    pub user_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -129,7 +131,6 @@ pub async fn login_by_mobile(
     let data = post(app, url, json_data)
         .await
         .map_err(|_| PXQError::ReqwestError)?;
-    println!("{:?}", data);
     let login_result =
         serde_json::from_value::<LoginResult>(data).map_err(|_| PXQError::ReqwestError)?;
     Ok(login_result)
@@ -146,8 +147,6 @@ pub async fn get_user_profile(app: Window) -> Result<UserProfileResult, PXQError
     let data = get(app, url, form)
         .await
         .map_err(|_| PXQError::GetUserProfileError)?;
-
-    println!("{:?}", data);
     let user_profile_result =
         serde_json::from_value(data).map_err(|_| PXQError::GetUserProfileError)?;
     Ok(user_profile_result)
@@ -192,7 +191,6 @@ pub async fn refresh_token_internal(app: Arc<Window>) -> Result<RefreshTokenResu
         "cyy_gatewayapi/user/pub/v3/refresh_token?refreshToken={}",
         token
     );
-    println!("{}", url);
     let json_data = json!({
         "src": API_SRC,
         "ver": API_VER,
@@ -201,8 +199,6 @@ pub async fn refresh_token_internal(app: Arc<Window>) -> Result<RefreshTokenResu
     let data = post(app, url.as_str(), json_data)
         .await
         .map_err(|_| PXQError::ReqwestError)?;
-
-    println!("{:?}", data);
 
     let result = serde_json::from_value(data).map_err(|_| PXQError::RefreshTokenError)?;
 

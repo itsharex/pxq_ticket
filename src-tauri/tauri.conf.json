@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "pxq_ticket",
-    "version": "0.1.6"
+    "version": "0.1.7"
   },
   "tauri": {
     "allowlist": {
@@ -20,13 +20,21 @@
       
       "shell": {
         "all": true,
-        "execute": false,
-        "open": false,
+        "execute": true,
+        "open": true,
         "scope": [],
-        "sidecar": false
+        "sidecar": true
       },
       "window": {
         "all": true
+      },
+      "dialog": {
+        "all": true, 
+        "ask": true, 
+        "confirm": true, 
+        "message": true, 
+        "open": true, 
+        "save": true 
       },
       "fs": {
         
@@ -40,7 +48,7 @@
         "removeFile": true,
         "renameFile": true,
         "exists": true,
-        "scope": ["$APPDATA/*"]
+        "scope": ["$APPDATA/*", "$DESKTOP/*"]
       },
       "path": {
         "all": true
@@ -80,8 +88,8 @@
         "title": "票星球",
         "fullscreen": false,
         "resizable": true,
-        "width": 1920,
-        "height": 1080,
+        "width": 1280,
+        "height": 720,
         "center": true
       }
     ],

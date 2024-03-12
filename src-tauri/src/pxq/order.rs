@@ -585,6 +585,20 @@ pub async fn buy_tickets(app: tauri::Window, params: BuyTicketParam) -> Result<(
         return Err(PXQError::ShowTimeUnknownError);
     }
 
+    if session.has_session_sold_out {
+        let _ = show_log(
+            app.clone(),
+            &format!(
+                "{}已售空!为避免对服务器造成过大压力, 不做捡漏功能!
+            为避免对服务器造成过大压力, 不做捡漏功能!
+            为避免对服务器造成过大压力, 不做捡漏功能！",
+                show.show_name
+            ),
+        )
+        .await;
+        return Ok(());
+    }
+
     let session_start_time = session_start_time.unwrap();
     let (s, r) = async_channel::unbounded::<bool>();
     let (exit_s, exit_r) = async_channel::unbounded::<bool>();

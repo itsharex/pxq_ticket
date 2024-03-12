@@ -29,6 +29,7 @@ export type UserProfileResult = {
     data: {
         nickname: string,
         avatar: string,
+        bizUserId: string
     }
 }
 

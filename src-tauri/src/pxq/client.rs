@@ -128,7 +128,6 @@ pub async fn post(app: Arc<Window>, url: &str, json_data: Value) -> Result<serde
 
     if url.contains("create_order") {
         let black_box = get_black_box();
-        println!("black_box:{}", black_box);
         request = request.header("Blackbox", black_box);
     }
 

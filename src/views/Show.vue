@@ -133,7 +133,7 @@ const openModal = async (index: number) => {
 
     const selectedSessionItem: Session = sessions.value[selectedSessionIndex.value]
     if (selectedSessionItem.sessionStatus == 'LACK_OF_TICKET') {
-      modalBtnText.value = "缺货登记"
+      modalBtnText.value = "立即捡漏"
       modalBtnType.value = BtnType.SOLD_OUT
     }else if(selectedSessionItem.sessionStatus == 'ON_SALE' || selectedSessionItem.sessionStatus == 'PRE_SALE') {
        modalBtnText.value = "立即购买"
@@ -175,7 +175,7 @@ const modalBtnFn = async () => {
   } else if (modalBtnType.value == BtnType.WAIT) {
     await grabSale()
   } else {
-    await ticketWaitlist()
+    await pickUp()
   }
 }
 
@@ -203,6 +203,12 @@ const grabSale = async () => {
   goToTask()
 }
 
+const pickUp = async () => {
+  await addReminder()
+  
+  goToTask()
+}
+
 const goToTask = async () => {
   const cur_show_data: CurShowData = {
     show: selectedShow.value,
@@ -219,23 +225,23 @@ const goToTask = async () => {
 }
 
 
-interface ticketWaitlistRes {
-  statusCode: number,
-  comments: string,
-  data: {
-    subscribed: boolean
-  }
-}
-const ticketWaitlist = async () => {
-  const res: ticketWaitlistRes = await invoke("ticket_waitlist", {
-    showId: selectedShow.value.showId,
-    sessionId: sessions.value[selectedSessionIndex.value].bizShowSessionId,
-    seatPlanId: seatPlans.value[selectedSeatPlanIndex.value].seatPlanId
-  })
-  if (res.statusCode == 200 && res.data.subscribed) {
-    toast.success("登记成功！票星球将在有票后第一时间通知您。!")
-  }
-}
+// interface ticketWaitlistRes {
+//   statusCode: number,
+//   comments: string,
+//   data: {
+//     subscribed: boolean
+//   }
+// }
+// const ticketWaitlist = async () => {
+//   const res: ticketWaitlistRes = await invoke("ticket_waitlist", {
+//     showId: selectedShow.value.showId,
+//     sessionId: sessions.value[selectedSessionIndex.value].bizShowSessionId,
+//     seatPlanId: seatPlans.value[selectedSeatPlanIndex.value].seatPlanId
+//   })
+//   if (res.statusCode == 200 && res.data.subscribed) {
+//     toast.success("登记成功！票星球将在有票后第一时间通知您。!")
+//   }
+// }
 
 const fetchShows = async () => {
   const response: any = await invoke("search_show_list", { keyword: searchKeyword.value, sortType: sortBy.value, page: currentPage.value });

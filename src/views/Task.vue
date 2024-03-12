@@ -38,20 +38,23 @@
                     </select>
                     <button @click="refreshPage" class="btn btn-primary px-6 " :disabled="isRunning">刷新库存</button>
                 </div>
-                <div v-if="isExpress" class="mb-4" >
+                <div v-if="isExpress" class="mb-4">
                     <label class="block font-semibold text-gray-800 mb-2">收货地址:</label>
                     <select v-model="selectedAddressIndex" class="select select-success w-full max-w-xs">
                         <option v-for="(item, index) in address" :key="item.addressId" :value="index">
-                          {{ item.username }}  {{ item.cellphone }} {{item.location.province }} {{item.location.city}} {{item.location.district }} {{ item.detailAddress }}
+                            {{ item.username }} {{ item.cellphone }} {{ item.location.province }} {{ item.location.city }}
+                            {{ item.location.district }} {{ item.detailAddress }}
                         </option>
                     </select>
                 </div>
                 <div class="mb-4 flex items-center">
                     <label class="block font-semibold text-gray-800 mb-2 mr-4 mr-2">购票数量:</label>
                     <div class="flex items-center">
-                        <button @click="decrementQuantity" class="px-3 py-1 bg-blue-500 text-white rounded-l-md">-</button>
+                        <button @click="decrementQuantity"
+                            class="px-3 py-1 bg-blue-500 text-white rounded-l-md">-</button>
                         <input type="text" v-model="quantity" class="w-10 text-center border border-gray-300" readonly>
-                        <button @click="incrementQuantity" class="px-3 py-1 bg-blue-500 text-white rounded-r-md">+</button>
+                        <button @click="incrementQuantity"
+                            class="px-3 py-1 bg-blue-500 text-white rounded-r-md">+</button>
                     </div>
                 </div>
                 <div class="mb-4 items-center">
@@ -66,8 +69,10 @@
                 <div class="mb-4 flex">
                     <button @click="submit" class="btn btn-outline btn-primary px-6 " :disabled="isRunning">运行</button>
 
-                    <button @click="stop" class="btn btn-outline btn-accent px-6 ml-6 bg-gray-100 text-white"
+                    <button @click="stop" class="btn btn-outline btn-accent px-6 ml-6 bg-gray-100 text-white mr-6"
                         :disabled="!isRunning">停止</button>
+
+                    <button @click="exportParams" class="btn btn-outline btn-primary px-6 ">导出参数</button>
                 </div>
             </div>
         </div>
@@ -77,14 +82,14 @@
             <div class="w-3/4">
                 <h2 class="text-lg font-semibold mb-4">日志</h2>
                 <div class="mb-4">
-                    <textarea class="log_textarea w-full border border-gray-300 text-black max-auto h-max" v-model="logData"
-                        readonly></textarea>
+                    <textarea class="log_textarea w-full border border-gray-300 text-black max-auto h-max"
+                        v-model="logData" readonly></textarea>
                 </div>
             </div>
         </div>
     </div>
 </template>
-  
+
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue';
 import { get_value } from '../store';
@@ -94,7 +99,7 @@ import { toast } from 'vue3-toastify';
 import router from '../router';
 import { UnlistenFn, emit, listen } from '@tauri-apps/api/event';
 import AppEvent from '../constant/event'
-
+import { writeTextFile, BaseDirectory } from '@tauri-apps/api/fs';
 const selectedAddressIndex = ref(0)
 const selectedAudienceIdList = ref([] as string[])
 const show = ref([] as unknown as Show)
@@ -173,13 +178,49 @@ const stop = async () => {
     isRunning.value = false
 }
 
+const exportParams = async () => {
+    if (quantity.value != selectedAudienceIdList.value.length) {
+        toast.error("您选择的购票数量和观演人数量不一致, 请检查!")
+        isRunning.value = false
+        return
+    }
+    const access_token = await get_value('access_token')
+    const refresh_token = await get_value('refresh_token')
+    const user_info = await get_value('user_info')
+    const exportData = {
+        access_token,
+        refresh_token,
+        user_info,
+        show: {
+            showId: show.value.showId,
+            showName: show.value.showName,
+            showStatus: show.value.showStatus,
+        },
+        session: {
+            sessionId: session.value.bizShowSessionId,
+            sessionName: session.value.sessionName,
+            sessionStatus: session.value.bizShowSessionId,
+        },
+        seatPlan: {
+            seatPlanId: seatPlans.value[selectedSeatPlanIndex.value].seatPlanId,
+            seatPlanName: seatPlans.value[selectedSeatPlanIndex.value].seatPlanName
+        },
+        buy_num: quantity.value,
+        audiences: selectedAudiences(),
+        address: address.value[selectedAddressIndex.value]
+    }
+    const user_id = await get_value('user_id')
+    await writeTextFile({ path: `pxq_${user_id}.json`, contents: JSON.stringify(exportData) }, { dir: BaseDirectory.Desktop });
+    toast.success(`成功导出配置文件到桌面文件夹, 文件名:pxq_******.json!`)
+}
+
 const refreshPage = async () => {
     const cur_show_data = (await get_value('cur_show_data')) as CurShowData
     show.value = cur_show_data.show
     const result: GetShowDetailResult = await invoke('get_show_detail', { showId: show.value.showId })
     if (result.statusCode == 200) {
         noteInfos.value = []
-        result.data.noteInfos.forEach( element => {
+        result.data.noteInfos.forEach(element => {
             if (element.code == 'EXPRESS') {
                 isExpress.value = element.type
                 noteInfos.value.push(element)
@@ -187,7 +228,7 @@ const refreshPage = async () => {
             else if (element.code == 'REAL_NAME_TICKET') {
                 isRealname.value = element.type
                 noteInfos.value.push(element)
-            }else if (element.code == 'E_TICKET') {
+            } else if (element.code == 'E_TICKET') {
                 noteInfos.value.push(element)
             }
         });
@@ -210,11 +251,13 @@ const refreshPage = async () => {
         return
     }
 
-    if (isExpress)  {
+    if (isExpress) {
         const getAddressRes: GetAddressResult = await invoke('get_user_address')
-       
         if (getAddressRes.statusCode == 200) {
             address.value = getAddressRes.data
+        } else {
+            toast.error("当前账号未添加收货地址, 请在APP添加收货地址后再进行购票!")
+            return
         }
     }
 }
@@ -227,7 +270,7 @@ watch(async () => router.currentRoute.value.fullPath, async () => {
 });
 
 onMounted(async () => {
-    
+
     unlisten.value = await listen(AppEvent.SHOW_LOG, (event: any) => {
 
         logData.value = event.payload.msg + '\n' + logData.value; // 将新的日志插入到日志数据的开头
@@ -240,10 +283,9 @@ onMounted(async () => {
 
 
 
-  
+
 <style>
 .log_textarea {
     min-height: 500px;
 }
 </style>
-  

@@ -1,4 +1,4 @@
-# pxq_ticket
+# pxq_ticket(此版有盾)
 
 ## 简介
 
@@ -57,11 +57,6 @@
 
 - <img src="./imgs/orders.png" width = "640" height = "360" alt="搜索" align=center />
 
-
-
-
-
-
 ## 使用
 
 ### 源码方式运行
@@ -84,7 +79,6 @@
 
 
 #### **[TG交流群，非服务群，上帝勿扰, 请认真阅读提示。](https://faka577.site/buy/5)** 
-
 
 
 
